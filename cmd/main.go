@@ -4,6 +4,8 @@ import (
 	// "os"
 
 	"context"
+	"os"
+	"os/signal"
 
 	"github.com/joseCarlosAndrade/notification-server/internal/core/config"
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
@@ -30,6 +32,15 @@ func main() {
 	ctx := context.Background()
 	
 	log.L(ctx).Info("starting app")
-	
-	di.NewContainer()
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	container := di.NewContainer(ctx)
+
+	if err := container.Run(ctx); err != nil  { // application somehow exited with failures
+		log.L(context.Background()).Warn("container was closed due to errors")
+	}
+
+	log.L(context.Background()).Info("app exited")
 }	
