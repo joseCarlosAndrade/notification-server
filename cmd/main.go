@@ -10,10 +10,7 @@ import (
 	"github.com/joseCarlosAndrade/notification-server/internal/di"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
-	// "go.uber.org/zap/zapcore"
 )
-
-
 
 
 func loadEnv() {
@@ -21,8 +18,6 @@ func loadEnv() {
 		panic(err)
 	}
 }
-
-
 
 func main() {
 	loadEnv()
