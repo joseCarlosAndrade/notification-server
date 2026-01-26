@@ -10,6 +10,7 @@ import (
 	"github.com/joseCarlosAndrade/notification-server/internal/adapter/mongo"
 	"github.com/joseCarlosAndrade/notification-server/internal/adapter/redis"
 	"github.com/joseCarlosAndrade/notification-server/internal/adapter/redpanda"
+	"github.com/joseCarlosAndrade/notification-server/internal/core/config"
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/port"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/service"
@@ -86,7 +87,10 @@ func initNotificationService(ctx context.Context, storage port.Storage, cache po
 }
 
 func initEventsHub(ctx context.Context, service *port.Service) port.EventsHub {
-	eh := redpanda.NewEventsHub(ctx, service)
+	eventsHub, err := redpanda.NewEventsHub(ctx, service, config.App.RedpandaBrokers, config.App.NotificationTopic, config.App.KafkaConsumerGroup)
+	if err != nil {
+		panic(err)
+	}
 
 	// init connection
 
@@ -94,7 +98,7 @@ func initEventsHub(ctx context.Context, service *port.Service) port.EventsHub {
 
 	// panic if fails
 
-	return &eh
+	return &eventsHub
 }
 
 func initAPIController(ctx context.Context, service *port.Service) port.Controller {
@@ -119,6 +123,8 @@ func (c *Container) Run(ctx context.Context) error {
 
 	// spawn go func to consume events. each rourine pipes the error returned to errCh unless its a context.Canceled, which is alredy handled
 	go func() {
+		log.L(ctx).Info("events hub is running")
+
 		err := c.eventsHub.Run(ctx)
 		if err != nil && !errors.Is(err, context.Canceled){
 			errCh <- fmt.Errorf("Could not run eventsHub: %w", err)
@@ -126,6 +132,8 @@ func (c *Container) Run(ctx context.Context) error {
 	}()
 
 	go func() {
+		log.L(ctx).Info("api controller is running")
+
 		err := c.controller.Run(ctx)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Could not run controller: %w", err)

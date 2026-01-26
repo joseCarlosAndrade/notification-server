@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/joho/godotenv"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/config"
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
 	"github.com/joseCarlosAndrade/notification-server/internal/di"
@@ -16,6 +17,8 @@ import (
 
 
 func loadEnv() {
+	_ = godotenv.Overload(".env")
+	
 	if err := envconfig.Process("app", &config.App); err != nil {
 		panic(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -54,9 +55,12 @@ func InitLogger() *zap.Logger {
 	return logger
 }
 
-// func Ld() *zap.Logger {
-// 	return logger
-// }
+func InitResources(ctx context.Context) context.Context {
+	traceId := uuid.NewString()
+	ctx = context.WithValue(ctx, "trace_id", traceId)
+
+	return ctx
+}
 
 // L gets a context and tries to put a field of trace_id from this context into the returned logger
 func L(ctx context.Context) *zap.Logger {
