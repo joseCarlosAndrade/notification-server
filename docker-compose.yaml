@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
   redpanda:
@@ -13,13 +12,30 @@ services:
       - --reserve-memory 0M
       - --node-id 0
       - --check=false
-      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092 # internal is for rpk, external is for my apps
-      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092 # redpanda will listen to this. internal is for rpk (trafic coming from inside the docker network), external is for my apps (trafic coming from outside the container)
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092 # address that redpanda will send to the client for future transmission. if it connects via internal port, send redpanda:9092. if it connects from outside, send localhost:19092. so all apps that try to connect externally will connect to localhost:19092
+      - --pandaproxy-addr 0.0.0.0:8082 # http proxy to use console. listen to this for incoming traffic
+      - --advertise-pandaproxy-addr localhost:8082 # proxy send this address back to tell clients how to find it for subsequent requests
     ports:
-      - "19092:19092"
+      - "19092:19092" # exposing port for apps
+      - "8082:8082" # http proxy for console
     volumes:
       - redpanda-data:/var/lib/redpanda/data
     restart: unless-stopped
+
+  console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: redpanda-console
+    entrypoint: /bin/sh -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda
 
 volumes:
   redpanda-data:
