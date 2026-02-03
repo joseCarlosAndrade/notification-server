@@ -2,8 +2,11 @@ package redpanda
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
+	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/models"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/port"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -50,12 +53,12 @@ func NewEventsHub(ctx context.Context, serviceRepository *port.Service, brokers 
 func (e *EventsHub) Run(ctx context.Context) error {
 	for {
 		// avoid fetching with canceled context
-		select {
-		case <-ctx.Done():
-			log.L(ctx).Warn("context canceled")
-			return nil
-		default:
-		}
+		// select {
+		// case <-ctx.Done():
+		// 	log.L(ctx).Warn("context canceled")
+		// 	return nil
+		// default:
+		// }
 		// log.L(ctx).Info("polling")
 
 		fetches := e.client.PollFetches(ctx)
@@ -90,14 +93,30 @@ func (e *EventsHub) processRecord(ctx context.Context, record *kgo.Record) error
 		zap.String("key", string(record.Key)), 
 		zap.String("value", string(record.Value)))
 	
-		// NEXT STEPS: VALIDATE THIS AND THE WAY THIS GROUP CONSUMES, OFFSET AND PARTITION
-
-	// validate payload
-
-	// save on database
+		// NEXT STEPS: VALIDATE THIS AND THE restart: unless-stopped
+	_, err := validatePayload(record.Key, record.Value)
+	if err != nil {
+		return fmt.Errorf("could not process record: %w", err)
+	}
 
 	// save in cache
+	// save in db
 
 	return nil
 }
 
+func validatePayload(_ []byte, value []byte) (*models.NotificationRecord, error) {
+
+	var payload models.NotificationRecord
+
+	if err := json.Unmarshal(value, &payload); err != nil {
+		return nil, fmt.Errorf("could not parse payload: %w", err)
+	}
+
+	return &payload, nil
+}
+
+
+func (e *EventsHub)IsHealthy(ctx context.Context) error {
+	return e.client.Ping(ctx)
+}

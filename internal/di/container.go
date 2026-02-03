@@ -119,7 +119,7 @@ func initAPIController(ctx context.Context, service *port.Service) port.Controll
 func (c *Container) Run(ctx context.Context) error {
 	log.L(ctx).Info("starting application container")
 
-	errCh := make(chan error, 2) // channel holds up errors
+	errCh := make(chan error, 3) // channel holds up errors
 
 	// spawn go func to consume events. each rourine pipes the error returned to errCh unless its a context.Canceled, which is alredy handled
 	go func() {
@@ -137,6 +137,14 @@ func (c *Container) Run(ctx context.Context) error {
 		err := c.controller.Run(ctx)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Could not run controller: %w", err)
+		}
+	}()
+
+	// start health probe
+	go func () {
+		err := c.initHealthCheck(ctx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			errCh <- fmt.Errorf("healthcheck error: %w", err)
 		}
 	}()
 
@@ -184,4 +192,27 @@ func (c *Container) Close(ctx context.Context) error {
 
 
 	return nil
+}
+
+
+// initHealthCheck checks each 5 seconds for health status. TODO: maybe try for max attempts
+func (c * Container) initHealthCheck(ctx context.Context) error {
+	log.L(ctx).Info("starting healthcheck")
+	
+	for {
+		// avoid checking with canceled context
+		select {
+		case <-ctx.Done():
+			log.L(ctx).Warn("context canceled. exiting healthcheck")
+			return nil
+		default:
+		}
+
+		time.Sleep(time.Second*5)
+
+		err := c.eventsHub.IsHealthy(ctx)
+		if err != nil {
+			return fmt.Errorf("healthcheck failed for eventshub: %w", err)
+		}
+	}
 }
