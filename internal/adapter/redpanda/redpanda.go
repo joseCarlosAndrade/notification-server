@@ -53,12 +53,12 @@ func NewEventsHub(ctx context.Context, serviceRepository *port.Service, brokers 
 func (e *EventsHub) Run(ctx context.Context) error {
 	for {
 		// avoid fetching with canceled context
-		// select {
-		// case <-ctx.Done():
-		// 	log.L(ctx).Warn("context canceled")
-		// 	return nil
-		// default:
-		// }
+		select {
+		case <-ctx.Done():
+			log.L(ctx).Warn("context canceled")
+			return nil
+		default:
+		}
 		// log.L(ctx).Info("polling")
 
 		fetches := e.client.PollFetches(ctx)

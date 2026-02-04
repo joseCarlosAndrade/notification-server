@@ -34,3 +34,22 @@ have a way of creating notifications:
 - use load balancer to balace requests (http)
 - use consumer groups to differ new events
 - use health probes
+
+## local compose config
+
+### redpanda
+
+```text
+APP_REDPANDABROKERS="localhost:19092"
+APP_KAFKACONSUMERGROUP="notification-group"
+APP_NOTIFICATIONTOPIC="notification.events.v1"
+```
+
+### mongo
+
+```text
+mongodb://admin:password@localhost:27017
+```
+
+database name: `notifications`
+colletion name: `notifications`

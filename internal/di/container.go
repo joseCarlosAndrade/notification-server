@@ -18,16 +18,19 @@ import (
 )
 
 type Shutdown func(context.Context) error
+type HealthCheck func(context.Context) error
 
 type Container struct {
 	eventsHub            port.EventsHub
 	controller          port.Controller
-
+	storage port.Storage
+	cache port.Cache
 	// service?
 
 	// TODO: BEFORE CONTINUING, CHECK OUT THE EMAIL DISPATCHER SERVICE TO SEE HOW THEY MANAGE KAFKA LISTENING
 
 	cleanUpFuncs map[string]Shutdown
+	healthProbeFuncs map[string]HealthCheck
 }
 
 func NewContainer(ctx context.Context) Container {
@@ -36,14 +39,18 @@ func NewContainer(ctx context.Context) Container {
 	// init dependencies
 
 	cleanUps := make(map[string]Shutdown, 0)
+	healthProbes := make(map[string]HealthCheck, 0)
 
 	// storage
 	storage := initStorage(ctx)
 	cleanUps["storage"] = storage.Close
+	healthProbes["storage"] = storage.IsHealthy
+	
 
 	// cache
 	cache := initCache(ctx)
 	cleanUps["cache"] = cache.Close
+	healthProbes["cache"] = cache.IsHealthy
 
 	// init service with dependencies
 	service := initNotificationService(ctx, storage, cache)
@@ -58,18 +65,33 @@ func NewContainer(ctx context.Context) Container {
 	cleanUps["eventsHub"] = consumer.Close
 	cleanUps["apiController"] = controller.Close
 
+	// append health probe for the main services
+	healthProbes["eventsHub"] = consumer.IsHealthy
+	healthProbes["apiController"] = controller.IsHealthy
+
 	// return container
 	return Container{
 		controller: controller,
 		eventsHub: consumer,
+		storage: storage,
+		cache: cache,
 		cleanUpFuncs: cleanUps,
+		healthProbeFuncs: healthProbes,
 	}	
 }
 
 // init dependencies. if anything crucial fails, panic
 
 func initStorage(ctx context.Context) port.Storage {
-	storage := mongo.NewStorage(ctx)
+	storage, err := mongo.NewStorage(ctx, config.App.MongoURI, 
+			config.App.MongoNotificationsDB, 
+			config.App.MongoNotificationsCollection)
+
+	if err != nil {
+		panic(err)
+	}
+
+	log.L(ctx).Debug("successfully initialized storage")
 
 	return &storage
 }
@@ -77,6 +99,7 @@ func initStorage(ctx context.Context) port.Storage {
 func initCache(ctx context.Context) port.Cache {
 	cache := redis.NewCache(ctx)
 
+	log.L(ctx).Debug("successfully initialized cache")
 	return &cache
 }
 
@@ -92,11 +115,7 @@ func initEventsHub(ctx context.Context, service *port.Service) port.EventsHub {
 		panic(err)
 	}
 
-	// init connection
-
-	// add health checks
-
-	// panic if fails
+	log.L(ctx).Debug("successfully initialized eventshub")
 
 	return &eventsHub
 }
@@ -104,11 +123,7 @@ func initEventsHub(ctx context.Context, service *port.Service) port.EventsHub {
 func initAPIController(ctx context.Context, service *port.Service) port.Controller {
 	controller := server.NewController(ctx, service)
 
-	// init connection
-
-	// add health checks
-
-	// panic if fails
+	log.L(ctx).Debug("successfully initialized api controller")
 
 	return &controller
 }
@@ -142,6 +157,7 @@ func (c *Container) Run(ctx context.Context) error {
 
 	// start health probe
 	go func () {
+		time.Sleep(time.Second*5) // wait 5 seconds to start health check
 		err := c.initHealthCheck(ctx)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("healthcheck error: %w", err)
@@ -209,10 +225,15 @@ func (c * Container) initHealthCheck(ctx context.Context) error {
 		}
 
 		time.Sleep(time.Second*5)
+		// log.L(ctx).Debug("checking services health")
 
-		err := c.eventsHub.IsHealthy(ctx)
-		if err != nil {
-			return fmt.Errorf("healthcheck failed for eventshub: %w", err)
+		for name, checkHealth := range c.healthProbeFuncs {
+			ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+			defer cancel()
+			// log.L(ctx).Debug("checking", zap.String("name", name))
+			if err := checkHealth(ctx); err != nil {
+				return fmt.Errorf("healthcheck failed for %s. error: %w", name, err)
+			}
 		}
 	}
 }

@@ -29,3 +29,7 @@ func (s *Cache) Close(ctx context.Context) error {
 
 	return nil
 }
+
+func (s *Cache) IsHealthy(ctx context.Context) error {
+	return nil
+}

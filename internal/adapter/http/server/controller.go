@@ -30,3 +30,7 @@ func (s *Controller) Close(ctx context.Context) error {
 
 	return nil
 }
+
+func (s *Controller) IsHealthy(ctx context.Context) error  {
+	return nil
+}
