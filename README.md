@@ -2,8 +2,6 @@
 
 Simple notification server implementation using redis and redpanda.
 
-maybe use some sort of db to store it?
-
 mongodb
 
 ## useful notes
@@ -34,6 +32,60 @@ have a way of creating notifications:
 - use load balancer to balace requests (http)
 - use consumer groups to differ new events
 - use health probes
+
+## Persistence
+
+Using mongo db to store notifications, as well as its status of reading.
+Default conn string for local tests:
+
+```text
+mongodb://admin:password@localhost:27017
+```
+
+## Message schema
+
+Default topic: `notification.events.v1`
+
+```json
+{
+    "service" : "payments",
+    "message" : "new order generated",
+    "sentAt" : "2026-02-04T21:34:32Z"
+}
+```
+
+### Aggregation used to sort last notifications from X time
+
+```json
+[
+ {
+   $match: {
+     sentAt : {
+       $gte : ISODate('2026-02-04T21:36:32Z')
+     }
+   } 
+ },
+  {
+  $sort: {
+    sentAt: -1
+  }
+}
+]
+```
+
+finding past notifications
+
+```golang
+// "10 minutes ago"
+tenMinsAgo := time.Now().UTC().Add(-10 * time.Minute)
+```
+
+## Timestamps
+
+All services must publish records using UTC timezones. This is the core standart to avoid confusion and incoherence betwen services. The timestamps are also stored in UTC.
+Universal at the core, Local at the edges.
+
+The edge services should handle the logic to convert the timestamps to its local timezone.
 
 ## local compose config
 

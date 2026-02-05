@@ -106,7 +106,7 @@ func initCache(ctx context.Context) port.Cache {
 func initNotificationService(ctx context.Context, storage port.Storage, cache port.Cache) port.Service {
 	service := service.NewService(ctx, storage, cache)
 
-	return service
+	return &service
 }
 
 func initEventsHub(ctx context.Context, service *port.Service) port.EventsHub {

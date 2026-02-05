@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/models"
@@ -94,13 +95,19 @@ func (e *EventsHub) processRecord(ctx context.Context, record *kgo.Record) error
 		zap.String("value", string(record.Value)))
 	
 		// NEXT STEPS: VALIDATE THIS AND THE restart: unless-stopped
-	_, err := validatePayload(record.Key, record.Value)
+	notification, err := validatePayload(record.Key, record.Value)
 	if err != nil {
 		return fmt.Errorf("could not process record: %w", err)
 	}
 
 	// save in cache
 	// save in db
+
+	err = (*e.service).SaveNewNotification(ctx, notification)
+	if err != nil {
+		log.L(ctx).Error("could not save new notification", zap.Error(err))
+		return fmt.Errorf("error saving notification: %w", err)
+	}
 
 	return nil
 }
@@ -111,6 +118,11 @@ func validatePayload(_ []byte, value []byte) (*models.NotificationRecord, error)
 
 	if err := json.Unmarshal(value, &payload); err != nil {
 		return nil, fmt.Errorf("could not parse payload: %w", err)
+	}
+
+	// ensuring the timestamp is utc
+	if payload.SentAt.Location() != time.UTC {
+		payload.SentAt = payload.SentAt.UTC()
 	}
 
 	return &payload, nil

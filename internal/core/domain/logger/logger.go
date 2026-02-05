@@ -32,7 +32,7 @@ func InitLogger() *zap.Logger {
 	} else {
 		encoderConfig = zap.NewProductionEncoderConfig() // JSON encoder 
 		encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder // level is capital: INFO, DEBUG, ERROR
-		encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder // time format
+		encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder // time format // similar to rfc 3339
 
 		encoder = zapcore.NewJSONEncoder(encoderConfig)
 		level = zapcore.InfoLevel
