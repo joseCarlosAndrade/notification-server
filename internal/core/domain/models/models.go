@@ -9,6 +9,15 @@ type NotificationRecord struct {
 	SentAt  time.Time `json:"sentAt"`
 }
 
+type Notification struct {
+	ID      string     `json:"_id"`
+	Service string     `json:"service"`
+	Message string     `json:"message"`
+	IsRead  bool       `json:"isRead"`
+	SentAt  time.Time  `json:"sentAt"`
+	ReadAt  *time.Time `json:"readAt"` // might not exist yet
+}
+
 // LastTime represnets the filter for getting notifications from the last day-hour-minute
 type LastTime struct {
 	Days int

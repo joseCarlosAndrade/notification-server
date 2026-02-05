@@ -147,9 +147,17 @@ func transformNotificationToMongo(notification *models.NotificationRecord, id st
 	}
 }
 
-func (s *Storage) GetAllNotificationsByTime(ctx context.Context, serviceName string, filter models.LastTime) ([]*models.NotificationRecord, error) {
+func (s *Storage) GetAllNotificationsByTime(ctx context.Context, serviceName string, filter models.LastTime) ([]*models.Notification, error) {
+	// todo
 	return nil, nil
 }
-func (s *Storage) GetNonReadNotifications(ctx context.Context, serviceName string) ([]*models.NotificationRecord, error) {
+
+func (s *Storage) GetNonReadNotifications(ctx context.Context, serviceName string) ([]*models.Notification, error) {
+	// todo
+	return nil, nil
+}
+
+func (s *Storage) GetLatestNotifications(ctx context.Context, serviceName string, n int) ([]*models.Notification, error) {
+	// todo
 	return nil, nil
 }

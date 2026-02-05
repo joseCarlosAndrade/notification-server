@@ -12,6 +12,7 @@ type Storage interface {
 
 	StoreNewNotification(ctx context.Context, notification *models.NotificationRecord, id string) error 
 	MarkNotificationAsRead(ctx context.Context, notificationID string) error
-	GetAllNotificationsByTime(ctx context.Context, serviceName string, filter models.LastTime) ([]*models.NotificationRecord, error)
-	GetNonReadNotifications(ctx context.Context, serviceName string) ([]*models.NotificationRecord, error)
+	GetAllNotificationsByTime(ctx context.Context, serviceName string, filter models.LastTime) ([]*models.Notification, error)
+	GetLatestNotifications(ctx context.Context, serviceName string, n int) ([]*models.Notification, error)
+	GetNonReadNotifications(ctx context.Context, serviceName string) ([]*models.Notification, error)
 }

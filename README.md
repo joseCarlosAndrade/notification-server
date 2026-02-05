@@ -33,6 +33,14 @@ have a way of creating notifications:
 - use consumer groups to differ new events
 - use health probes
 
+## Todos
+
+- create index for sentAt
+- create index for id
+- implement read operations for mongo package
+- implement redis caching
+- implement api layer
+
 ## Persistence
 
 Using mongo db to store notifications, as well as its status of reading.
@@ -56,7 +64,7 @@ Default topic: `notification.events.v1`
 
 ### Aggregation used to sort last notifications from X time
 
-```json
+```bson
 [
  {
    $match: {
