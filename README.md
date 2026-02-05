@@ -55,6 +55,8 @@ mongodb://admin:password@localhost:27017
 
 Default topic: `notification.events.v1`
 
+`sentAt` field is optional. If not passed, the saved time will be the systems at that moment (utc).
+
 ```json
 {
     "service" : "payments",
