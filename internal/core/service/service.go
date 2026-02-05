@@ -14,13 +14,13 @@ import (
 // Service implements the port.Service interface
 type Service struct {
 	storage port.Storage
-	cache port.Cache
+	cache   port.Cache
 }
 
 func NewService(ctx context.Context, storageRepository port.Storage, cacheRepository port.Cache) Service {
 	return Service{
 		storage: storageRepository,
-		cache: cacheRepository,
+		cache:   cacheRepository,
 	}
 }
 
@@ -33,16 +33,17 @@ func (s *Service) SaveNewNotification(ctx context.Context, notification *models.
 	err = s.storage.StoreNewNotification(ctx, notification, id.String())
 	if err != nil {
 		log.L(ctx).Error("could not store new notification",
-			zap.String("id", id.String()),	
-			zap.Error(err))	
+			zap.String("id", id.String()),
+			zap.Error(err))
 
 		return fmt.Errorf("could not store new notification: %w", err)
 	}
 
 	// todo: store in cache
-	
+
 	log.L(ctx).Info("notification successfully stored",
 		zap.String("id", id.String()))
-			
+
+
 	return nil
 }

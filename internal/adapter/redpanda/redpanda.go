@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/joseCarlosAndrade/notification-server/internal/core/domain"
 	log "github.com/joseCarlosAndrade/notification-server/internal/core/domain/logger"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/models"
 	"github.com/joseCarlosAndrade/notification-server/internal/core/domain/port"
@@ -120,9 +121,15 @@ func validatePayload(_ []byte, value []byte) (*models.NotificationRecord, error)
 		return nil, fmt.Errorf("could not parse payload: %w", err)
 	}
 
-	// ensuring the timestamp is utc
-	if payload.SentAt.Location() != time.UTC {
-		payload.SentAt = payload.SentAt.UTC()
+	// if not passed, use now from UTC
+	if payload.SentAt == nil {
+		now := domain.NewNowTime()
+		payload.SentAt = &now
+	} else {
+		// ensuring the timestamp is utc
+		if payload.SentAt.Location() != time.UTC {
+			*payload.SentAt = payload.SentAt.UTC()
+		}
 	}
 
 	return &payload, nil
@@ -132,3 +139,11 @@ func validatePayload(_ []byte, value []byte) (*models.NotificationRecord, error)
 func (e *EventsHub)IsHealthy(ctx context.Context) error {
 	return e.client.Ping(ctx)
 }
+
+/*
+{
+    "service" : "payments",
+    "message" : "new order generated",
+    "sentAt" : "2026-02-04T21:34:32Z"
+}
+*/

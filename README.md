@@ -35,11 +35,12 @@ have a way of creating notifications:
 
 ## Todos
 
-- create index for sentAt
-- create index for id
 - implement read operations for mongo package
+  - read single notification
+  - read all notifications from service
 - implement redis caching
 - implement api layer
+- wrap panic calls so it doesnt quit the app
 
 ## Persistence
 
@@ -66,18 +67,19 @@ Default topic: `notification.events.v1`
 
 ```bson
 [
+{
+ $match: {
+   service : "payments",
+   sentAt : {
+     $gte :   ISODate('2026-02-04T21:38:32Z')
+   }
+ } 
+},
  {
-   $match: {
-     sentAt : {
-       $gte : ISODate('2026-02-04T21:36:32Z')
-     }
-   } 
- },
-  {
-  $sort: {
-    sentAt: -1
-  }
-}
+   $sort: {
+     sentAt: -1
+   }
+ }
 ]
 ```
 

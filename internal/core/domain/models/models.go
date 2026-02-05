@@ -6,7 +6,7 @@ import "time"
 type NotificationRecord struct {
 	Service string    `json:"service"` // Service represents the service that produced this notification
 	Message string    `json:"message"` // Message is the data
-	SentAt  time.Time `json:"sentAt"`
+	SentAt  *time.Time `json:"sentAt"`
 }
 
 type Notification struct {
