@@ -88,6 +88,13 @@ func (e *EventsHub) Close(ctx context.Context) error {
 // proccesRecord starts a trace_id for this context and process the record to store this entry in
 // database and in cache
 func (e *EventsHub) processRecord(ctx context.Context, record *kgo.Record) error {
+	// handle panic
+	defer func() {
+		if r := recover(); r != nil {
+			log.L(ctx).Error("PANIC DETECTED. recovering", zap.Any("recover", r))
+		}
+	}()
+
 	// loads a new trace_id into the context
 	ctx = log.InitResources(ctx)
 
